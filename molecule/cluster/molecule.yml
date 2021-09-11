@@ -1,0 +1,80 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: instance-1
+    image: "geerlingguy/docker-${MOLECULE_DISTRO:-ubuntu2004}-ansible:latest"
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    networks:
+      - name: ${MOLECULE_DISTRO:-ubuntu2004}-${CI_PROJECT_NAME:-default}
+    privileged: true
+    exposed_ports:
+      - 15672/tcp
+    published_ports:
+      - 0.0.0.0:15672:15672/tcp
+    pre_build_image: true
+    groups:
+      - rabbitmq
+  - name: instance-2
+    image: "geerlingguy/docker-${MOLECULE_DISTRO:-ubuntu2004}-ansible:latest"
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    networks:
+      - name: ${MOLECULE_DISTRO:-ubuntu2004}-${CI_PROJECT_NAME:-default}
+    privileged: true
+    pre_build_image: true
+    groups:
+      - rabbitmq
+  - name: instance-3
+    image: "geerlingguy/docker-${MOLECULE_DISTRO:-ubuntu2004}-ansible:latest"
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    networks:
+      - name: ${MOLECULE_DISTRO:-ubuntu2004}-${CI_PROJECT_NAME:-default}
+    privileged: true
+    pre_build_image: true
+    groups:
+      - rabbitmq
+provisioner:
+  name: ansible
+  playbooks:
+    converge: ${MOLECULE_PLAYBOOK:-converge.yml}
+  inventory:
+    group_vars:
+      all:
+        rabbitmq_master: instance-1
+        rabbitmq_config_ha: true
+        rabbitmq_debian_version: 3.8.18-1
+        rabbitmq_enable_clustering: true
+        rabbitmq_users:
+          - name: admin
+            password: admin
+            vhost: /
+            configure_priv: ".*"
+            read_priv: ".*"
+            write_priv: ".*"
+            tags: administrator
+        rabbitmq_plugins: "rabbitmq_management"
+        rabbitmq_config:
+          - queue_name: test
+            durable: true
+            exchange_name: test
+            type: direct
+            routing_key: test
+            tags: "ha-mode=all,ha-sync-mode=automatic"
+    host_vars:
+      instance-1:
+      instance-2:
+      instance-3:
+scenario:
+  name: cluster
+verifier:
+  name: testinfra
+  lint:
+    name: flake8

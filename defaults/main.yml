@@ -1,29 +1,17 @@
-# Ansible role for RabbitMQ
-
-Ansible role to install and manage [RabbitMQ](https://www.rabbitmq.com/).
-
-- Install and configure the Erlang
-- Install and configure the RabbitMQ
-- Configure RabbitMQ users
-- Configure RabbitMQ authentication
-- Configure RabbitMQ vhosts, queues
-- Configure clustering (optional)
-
-#### Variables
-
-```yaml
+---
+# defaults file for ansible-rabbitmq
 rabbitmq_config: []
-# - queue_name: test
+# - queue_name: logstash
 #   durable: true
-#   exchange_name: test
+#   exchange_name: logstash
 #   type: direct
-#   routing_key: test
+#   routing_key: logstash
 #   tags: "ha-mode=all,ha-sync-mode=automatic"
-# - queue_name: test-quorum
+# - queue_name: logstash-quorum
 #   durable: true
-#   exchange_name: test-quorum
+#   exchange_name: logstash-quorum
 #   type: direct
-#   routing_key: test
+#   routing_key: logstash
 #   queue_type: quorum
 #   tags: "ha-mode=all,ha-sync-mode=automatic"
 # - policy_pattern: ".*"
@@ -37,6 +25,19 @@ rabbitmq_config_service: false
 rabbitmq_config_file: etc/rabbitmq/rabbitmq.config.j2
 rabbitmq_config_env_file: etc/rabbitmq/rabbitmq-env.conf.j2
 rabbitmq_env_config: {}
+
+# rabbitmq_debian_repo: deb http://www.rabbitmq.com/debian/ testing main
+#other repos
+rabbitmq_debian_repo: "https://dl.cloudsmith.io/public/rabbitmq/rabbitmq-server/deb"
+rabbitmq_debian_repo_key: "https://dl.cloudsmith.io/public/rabbitmq/rabbitmq-server/gpg.9F4587F226208342.key"
+rabbitmq_debian_team_key: "0x0A9AF2115F4687BD29803A206B73A36E6026DFCA"
+rabbitmq_debian_repo_tpl: etc/apt/sources.list.d/rabbitmq.list.j2
+
+rabbitmq_debian_erlang_from_rabbit: true
+rabbitmq_debian_erlang_repo: "https://packages.erlang-solutions.com"
+rabbitmq_debian_erlang_repo_key: "https://packages.erlang-solutions.com/ubuntu/erlang_solutions.asc"
+rabbitmq_debian_erlang_repo_tpl: etc/apt/sources.list.d/rabbitmq_erlang.list.j2
+
 
 # current version if not defined
 rabbitmq_debian_version_defined: true
@@ -96,80 +97,3 @@ rabbitmq_users:
 
 # comma separated list of plugins to enable
 rabbitmq_plugins: "rabbitmq_management"
-```
-
-#### Usage
-
-Example of inventory.yaml for Single RabbitMQ
-
-```yaml
----
-rabbitmq:
-  vars:
-    rabbitmq_master: "node1"
-    rabbitmq_users:
-      - name: admin
-        password: admin
-        vhost: /
-        configure_priv: ".*"
-        read_priv: ".*"
-        write_priv: ".*"
-        tags: administrator
-    rabbitmq_plugins: "rabbitmq_management"
-    rabbitmq_config:
-      - queue_name: test
-        durable: true
-        exchange_name: test
-        type: direct
-        routing_key: test
-  hosts:
-    node1:
-      ansible_host: 192.168.1.200
-```
-
-Example of inventory.yaml for Cluster RabbitMQ
-
-```yaml
----
-
-all:
-  children:
-    rabbitmq:
-
-rabbitmq:
-  vars:
-    rabbitmq_master: "node1"
-    rabbitmq_config_ha: true
-    rabbitmq_enable_clustering: true
-    rabbitmq_users:
-      - name: admin
-        password: admin
-        vhost: /
-        configure_priv: ".*"
-        read_priv: ".*"
-        write_priv: ".*"
-        tags: administrator
-    rabbitmq_plugins: "rabbitmq_management"
-    rabbitmq_config:
-      - queue_name: test
-        durable: true
-        exchange_name: test
-        type: direct
-        routing_key: test
-  hosts:
-    node1:
-      ansible_host: 192.168.1.200
-    node2:
-      ansible_host: 192.168.1.201
-    node3:
-      ansible_host: 192.168.1.202
-```
-
-Example of playbook.yaml
-
-```yaml
----
-- hosts: rabbitmq
-  roles:
-    - rabbitmq
-```

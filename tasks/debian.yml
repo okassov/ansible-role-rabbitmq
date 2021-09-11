@@ -1,0 +1,77 @@
+---
+- name: debian | Adding Pre-Reqs
+  apt:
+    name:
+      - gnupg2
+      - apt-transport-https
+    state: present
+    update_cache: true
+  become: true
+  register: result
+  until: result is successful
+
+- name: debian | adding RabbitMQ repo public GPG key to the apt repo
+  apt_key:
+    url: "{{ rabbitmq_debian_repo_key }}"
+    state: present
+  become: true
+  register: result
+  until: result is successful
+
+- name: debian | adding RabbitMQ team public GPG key to the apt repo
+  apt_key:
+    keyserver: keys.openpgp.org
+    id: "{{ rabbitmq_debian_team_key }}"
+    state: present
+  become: true
+  register: result
+  until: result is successful
+
+- name: debian | adding RabbitMQ repo
+  template:
+    src: "{{ rabbitmq_debian_repo_tpl }}"
+    dest: "/etc/apt/sources.list.d/{{ rabbitmq_debian_repo_tpl | basename | regex_replace('\\.j2$', '') }}"
+    force: true
+    mode: 0644
+    backup: true
+  become: true
+  register: result
+  until: result is successful
+
+- name: debian | adding RabbitMQ erlang repo public GPG key to the apt repo
+  apt_key:
+    url: "{{ rabbitmq_debian_erlang_repo_key }}"
+    state: present
+  become: true
+  register: result
+  until: result is successful
+
+- name: debian | add Rabbitmq erlang repo
+  template:
+    src: "{{ rabbitmq_debian_erlang_repo_tpl }}"
+    dest: "/etc/apt/sources.list.d/{{ rabbitmq_debian_erlang_repo_tpl | basename | regex_replace('\\.j2$', '') }}"
+    force: true
+    backup: true
+  become: true
+  when: rabbitmq_debian_erlang_from_rabbit
+
+- name: debian | Update cache
+  apt:
+    update_cache: true
+  changed_when: false
+
+- name: debian | installing RabbitMQ server
+  apt:
+    name:
+      - rabbitmq-server{{ (rabbitmq_debian_version_defined and rabbitmq_debian_version is defined) | ternary(['=',rabbitmq_debian_version] | join(''),'') }}
+    state: present
+  become: true
+  register: result
+  until: result is successful
+
+- name: debian | ensuring that the RabbitMQ service is running
+  service:
+    name: rabbitmq-server
+    state: started
+    enabled: yes
+  become: true
