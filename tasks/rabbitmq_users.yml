@@ -3,6 +3,7 @@
   rabbitmq_user:
     name: "{{ item['name'] }}"
     password: "{{ item['password'] }}"
+    node: "rabbit@{{ ansible_fqdn }}"
     vhost: "{{ item['vhost']|default(omit) }}"
     configure_priv: "{{ item['configure_priv']|default(omit) }}"
     read_priv: "{{ item['read_priv']|default(omit) }}"
@@ -23,6 +24,7 @@
   rabbitmq_user:
     name: "{{ item['name'] }}"
     password: "{{ item['password'] }}"
+    node: "rabbit@{{ ansible_fqdn }}"
     vhost: "{{ item['vhost']|default(omit) }}"
     configure_priv: "{{ item['configure_priv']|default(omit) }}"
     read_priv: "{{ item['read_priv']|default(omit) }}"
